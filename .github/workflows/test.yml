@@ -1,4 +1,4 @@
-name: Build Flutter Android APK
+name: Build 
 
 on:
   workflow_dispatch:
@@ -10,21 +10,36 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+      # 检出代码到运行环境
 
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
         flutter-version: '3.22.0'
+      # 使用 subosito 提供的 Flutter Action 安装指定版本的 Flutter
+
+    - name: Get Flutter SDK path
+      id: flutter-sdk-path
+      run: echo "::set-output name=sdk_path::$(flutter sdk-path)"
+      # 获取 Flutter SDK 的路径并存储为输出变量，以便后续步骤使用
 
     - name: Modify Flutter configuration
       run: |
-        FLUTTER_DIR=$(dirname $(which flutter))
-        sed -i '/if $ShrinkResources/,/end/{//d}' "${FLUTTER_DIR}/packages/flutter_tools/gradle/src/main/groovy/flutter.groovy"
+        FLUTTER_DIR="${{ steps.flutter-sdk-path.outputs.sdk_path }}"
+        # 使用 sed 删除 flutter.groovy 中与 ShrinkResources 相关的 if 代码块
+        # 确保文件路径正确，并且 sed 命令能够正确执行
+        if [ -f "${FLUTTER_DIR}/packages/flutter_tools/gradle/src/main/groovy/flutter.groovy" ]; then
+          sed -i '/if $ShrinkResources/,/end/{//d}' "${FLUTTER_DIR}/packages/flutter_tools/gradle/src/main/groovy/flutter.groovy"
+        else
+          echo "flutter.groovy file not found."
+          exit 1
+        fi
 
     - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y python3 bison patch gcc
+      # 安装构建过程中需要的依赖
 
     - name: Prepare build environment
       run: |
@@ -32,13 +47,16 @@ jobs:
         split -b 98M debian-xfce.tar.xz assets/debian.tar.xz.
         mkdir -p assets
         mv assets/debian.tar.xz.* assets/
+      # 准备构建环境，下载并分割 Debian 镜像
 
     - name: Build project
       run: |
         flutter build apk --target-platform android-arm64 --split-per-abi --obfuscate --split-debug-info=tiny_computer/sdi
+      # 使用 Flutter 构建 APK
 
     - name: Upload APK
-      uses: actions/upload-artifact@v3  # 更新到 v3
+      uses: actions/upload-artifact@v3
       with:
         name: app-apk
         path: build/app/outputs/flutter-apk/app-arm64.apk
+      # 上传构建好的 APK 为工件
