@@ -15,38 +15,30 @@ jobs:
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.22.0'
+        flutter-version: '3.24.4'  # 更新为最新稳定版本的 Flutter
       # 使用 subosito 提供的 Flutter Action 安装指定版本的 Flutter
 
     - name: Modify Flutter configuration
       run: |
-        # 直接使用 FLUTTER_ROOT 环境变量，这是 GitHub Actions 预设的环境变量
-        FLUTTER_GROOVY_PATH="$FLUTTER_ROOT/packages/flutter_tools/gradle/src/main/groovy/flutter.groovy"
+        FLUTTER_DIR=$(dirname $(which flutter))
+        FLUTTER_GROOVY_PATH="${FLUTTER_DIR}/packages/flutter_tools/gradle/src/main/groovy/flutter.groovy"
         if [ -f "$FLUTTER_GROOVY_PATH" ]; then
           sed -i '/if.*ShrinkResources.*/,/end/{//d}' "$FLUTTER_GROOVY_PATH"
         else
           echo "flutter.groovy file not found at path: $FLUTTER_GROOVY_PATH"
           exit 1
         fi
-      env:
-        FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.22.0-x64
-      # 确保 sed 命令中的正则表达式匹配整个 if 代码块
 
     - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y python3 bison patch gcc
       # 安装构建过程中需要的依赖
+
     - name: Prepare build environment
       run: |
-        # 使用 wget 从 GitHub Releases 下载 debian-xfce.tar.xz 文件
         wget https://github.com/Cateners/tiny_computer/releases/download/v1.0.18/debian-xfce.tar.xz
-        
-        # 确保 assets 目录存在
         mkdir -p assets
-        
-        # 使用 split 命令将下载的 tar.xz 文件分割成多个小于 98MB 的文件
-        # 直接将分割后的文件保存在 assets 目录中
         split -b 98M debian-xfce.tar.xz assets/debian.tar.xz.
 
     - name: Build project
