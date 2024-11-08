@@ -1,0 +1,45 @@
+name: Build Flutter Android APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.22.0'
+
+    - name: Modify Flutter configuration
+      run: |
+        FLUTTER_DIR=$(dirname $(which flutter))
+        # 使用sed删除if代码块
+        sed -i '/if $ShrinkResources/,/end/{//d}' "${FLUTTER_DIR}/packages/flutter_tools/gradle/src/main/groovy/flutter.groovy"
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3 bison patch gcc
+
+    - name: Prepare build environment
+      run: |
+        wget https://github.com/Cateners/tiny_computer/releases/download/v1.0.18/debian-xfce.tar.xz
+        split -b 98M debian.tar.xz assets/debian.tar.xz.
+        mkdir -p assets
+        mv assets/debian.tar.xz.* assets/
+
+    - name: Build project
+      run: |
+        flutter build apk --target-platform android-arm64 --split-per-abi --obfuscate --split-debug-info=tiny_computer/sdi
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v2
+      with:
+        name: app-apk
+        path: build/app/outputs/flutter-apk/app-arm64.apk
