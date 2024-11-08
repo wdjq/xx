@@ -1,4 +1,4 @@
-name: Build 
+name: Build Flutter Android APK
 
 on:
   workflow_dispatch:
@@ -28,12 +28,14 @@ jobs:
         FLUTTER_DIR="${{ steps.flutter-sdk-path.outputs.sdk_path }}"
         # 使用 sed 删除 flutter.groovy 中与 ShrinkResources 相关的 if 代码块
         # 确保文件路径正确，并且 sed 命令能够正确执行
-        if [ -f "${FLUTTER_DIR}/packages/flutter_tools/gradle/src/main/groovy/flutter.groovy" ]; then
-          sed -i '/if $ShrinkResources/,/end/{//d}' "${FLUTTER_DIR}/packages/flutter_tools/gradle/src/main/groovy/flutter.groovy"
+        FLUTTER_GROOVY_PATH="${FLUTTER_DIR}/packages/flutter_tools/gradle/src/main/groovy/flutter.groovy"
+        if [ -f "$FLUTTER_GROOVY_PATH" ]; then
+          sed -i '/if.*ShrinkResources.*/,/end/{//d}' "$FLUTTER_GROOVY_PATH"
         else
-          echo "flutter.groovy file not found."
+          echo "flutter.groovy file not found at path: $FLUTTER_GROOVY_PATH"
           exit 1
         fi
+      # 确保 sed 命令中的正则表达式匹配整个 if 代码块
 
     - name: Install dependencies
       run: |
