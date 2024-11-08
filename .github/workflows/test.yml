@@ -37,14 +37,15 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y python3 bison patch gcc
       # 安装构建过程中需要的依赖
-
     - name: Prepare build environment
       run: |
         wget https://github.com/Cateners/tiny_computer/releases/download/v1.0.18/debian-xfce.tar.xz
         split -b 98M debian-xfce.tar.xz assets/debian.tar.xz.
         mkdir -p assets
-        mv assets/debian.tar.xz.* assets/
-      # 准备构建环境，下载并分割 Debian 镜像
+        # 确保移动文件时使用正确的文件名
+        for file in assets/debian.tar.xz.*; do
+          mv "$file" "assets/$(basename "$file")"
+        done
 
     - name: Build project
       run: |
